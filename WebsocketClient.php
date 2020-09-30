@@ -3,9 +3,10 @@
 /**
  * Class WebsocketClient
  * $client = new WebsocketClient('127.0.0.1', '3000');
+ * $client = new WebsocketClient('127.0.0.1', '3000', 'ssl'); //https
  *
  * $client->send(['msg' => 'hello']);   //websocket
- * $client->emit('msg', 'hello');       //socket.io
+ * $client->emit('msg', json_encode(array)|string);       //socket.io
  *
  * $response = $client->receive(); 
  */
@@ -13,15 +14,19 @@ class WebsocketClient
 {
     protected $socket;
     protected $host;
+    protected $protocol;
     protected $port;
+    protected $transport;
     protected $connectTime;
     const EXPIRE_SECONDS = 30;
 
 
-    public function __construct($host, $port)
+    public function __construct($host, $port, $protocol="http", $transport="websocket")
     {
-        $this->host = $host;
-        $this->port = $port;
+        $this->host      = $host;
+        $this->port      = $port;
+        $this->protocol  = $protocol;
+        $this->transport = $transport;
     }
 
     public function send($data)
@@ -64,7 +69,7 @@ class WebsocketClient
 
     private function handShake()
     {
-        $this->socket = fsockopen($this->host, $this->port);
+        $this->socket = fsockopen($this->protocol."://".$this->host, $this->port);
 
         $key = $this->generateKey();
 
@@ -94,7 +99,8 @@ class WebsocketClient
 
     private function getHeader($key)
     {
-        $header[] = "GET /socket.io/?EIO=2&transport=websocket HTTP/1.1";
+        //$header[] = "GET /socket.io/?EIO=2&transport=websocket HTTP/1.1";
+        $header[] = "GET /socket.io/?EIO=3&transport={$this->transport} HTTP/1.1"; //Version 3
         $header[] = "Host: http://{$this->host}:{$this->port}";
         $header[] = 'Connection: Upgrade';
         $header[] = 'Upgrade: WebSocket';
